@@ -25,7 +25,7 @@ def enviar_email(servidor_smtp, porta_smtp, remetente, destinatario, assunto, co
 
 class TesteEmail(unittest.TestCase): #criando a função mock pra simular a função modelo
 
-    @patch('smtplib.SMTP')  #Substituindo a classe SMTP pelo Mock
+    @patch('smtplib.SMTP')  #substituindo a classe SMTP pelo Mock
     def test_enviar_email(self, mock_smtp):
         instancia = mock_smtp.return_value 
 
@@ -37,7 +37,25 @@ class TesteEmail(unittest.TestCase): #criando a função mock pra simular a fun�
         instancia.starttls.assert_called_with()
         instancia.login.assert_called_with("meuemail@example.com", "MinhaSenha")  
         instancia.sendmail.assert_called_with("meuemail@example.com", "seuemail@example.com", ANY)  
-        instancia.quit.assert_called_with()  
+        instancia.quit.assert_called_with() 
 
-if __name__ == '__main__':
+class TesteFalhaNaAutenticacao(unittest.TestCase): #criando a função mock pra simular o modelo
+
+    # Teste para a função de envio de e-mail
+    @patch('smtplib.SMTP') #substituindo a classe pelo Mock
+    def test_enviar_email_falha_autenticacao(self, mock_smtp):
+        instancia = mock_smtp.return_value
+        instancia.login.side_effect = smtplib.SMTPAuthenticationError(535, b'Authentication failed') #simula uma falha na autenticação
+
+        # Chamando a função de envio de e-mail
+        with self.assertRaises(smtplib.SMTPAuthenticationError): #Verifica se há uma exceção lançada durante a chamada da função
+            enviar_email("smtp.example.com", 587, "meuemail@example.com", "seuemail@example.com", "Assunto", "Conteúdo do E-mail")
+
+        # Verificando se a função foi chamada com os argumentos corretos
+        mock_smtp.assert_called_with("smtp.example.com", 587)
+        instancia.starttls.assert_called_with()
+        instancia.login.assert_called_with("meuemail@example.com", "MinhaSenha")
+        instancia.quit.assert_not_called()
+
+if __name__ == '__main__': #executando os testes
     unittest.main() 
